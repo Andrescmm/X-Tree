@@ -31,34 +31,40 @@ public:
     Xtree(int m);
     int distance(const vector<int> &a, const vector<int> &b);
     node* chooseLeaf(node *node, vector<int> elem);
-    void Select_picks__(node* n,int &a,int &b);
+    void picks(node* n,int &a,int &b);
     void insert(vector<int> point);
-    void CheckParent(node *node);
-    void Split_node(node** nodo);
-    bool pick_next(node* region_1,node* region_2,const vector<int>& point);
+    void checkParent(node *node);
+    void split(node** nodo);
     bool Overlap(node* region1,node* region2);
     vector<vector<int>> KNN_Search(node *root,vector<int> point,int k);
     
 };
 
-Xtree::Xtree(int m){
 
-        this->M = m;
-        this->head = nullptr;
+// X-Tree
+Xtree::Xtree(int m){
+    
+    this->M = m;
+    this->head = nullptr;
 }
 
+
+// Distance
 int Xtree::distance(const vector<int> &a, const vector<int> &b){
     int distancia = 0;
     for(int i = 0;i<numDim;i++){
-        //distancia = distancia + pow(a.data[i]-b.data[i],2);
+        
         distancia = distancia + abs((b[i]-a[i])*(b[i]-a[i]));
     }
     return sqrt(distancia);
 }
 
+
+// Choose leaf
 node* Xtree::chooseLeaf(node *node, vector<int> point){
-    if(node->leaf)
-       return node;
+    if(node->leaf){
+        return node;
+    }
     
     // the best area
     int area = numeric_limits<int>::max();
@@ -76,24 +82,26 @@ node* Xtree::chooseLeaf(node *node, vector<int> point){
     return chooseLeaf(node,point);
 }
 
-void Xtree::Select_picks__(node* n,int &a,int &b){
+
+// Select Picks
+void Xtree::picks(node* n,int &a,int &b){
     a = 0;
     b = 0;
-    int min_distance_lowerBound = numeric_limits<int>::max();//
-    int min_distance_upperBound = numeric_limits<int>::max();//
-    int temp_area = 0.0;
-    //cout<<"Point: "<<n->m_data_children.size()<<endl;
+    int minLB = numeric_limits<int>::max();
+    int minUB = numeric_limits<int>::max();
+    int tempArea = 0;
+
     for(int i=0 ; i<n->DC.size() ; i++){
-        temp_area = distance(n->LB,n->DC[i]);
-        if(temp_area < min_distance_lowerBound){
-            min_distance_lowerBound = temp_area;
+        tempArea = distance(n->LB,n->DC[i]);
+        if(tempArea < minLB){
+            minLB = tempArea;
             a = i;
         }
         
-        temp_area = distance(n->UB,n->DC[i]);
-        if(temp_area < min_distance_upperBound){
+        tempArea = distance(n->UB,n->DC[i]);
+        if(tempArea < minUB){
             if(i != a){
-                min_distance_upperBound = temp_area;
+                minUB = tempArea;
                 b = i;
             }
         }
@@ -101,6 +109,7 @@ void Xtree::Select_picks__(node* n,int &a,int &b){
 }
 
 
+// Insert
 void Xtree::insert(vector<int> point){
     
     node** nodeX = &head;
@@ -109,57 +118,59 @@ void Xtree::insert(vector<int> point){
         *nodeX = new node(point);
         return;
     }
-    else{
+    else{ // when the X-Tree is not empty
         (*nodeX) = chooseLeaf((*nodeX),point);
         
         (*nodeX)->DC.push_back(point);
         (*nodeX)->updateMBR(point);
         
         if(this->M*(*nodeX)->superNode < (*nodeX)->DC.size()){
-            Split_node(nodeX);
+            split(nodeX);
         }
-        CheckParent(this->head);
+        checkParent(this->head);
         return;
     }
 }
 
 // CheckParent
-void Xtree::CheckParent(node *node){
+void Xtree::checkParent(node *node){
     
     if(node == nullptr and node->leaf)
         return;
     
     for(int i=0;i<node->children.size();i++){
         node->children[i]->parent = node;
-        CheckParent(node->children[i]);
+        checkParent(node->children[i]);
     }
 }
 
-void Xtree::Split_node(node** nodo)
-{
+
+// Split Node
+void Xtree::split(node** nodo){
+    
     if((*nodo)->leaf){
-        int Seed_1 = 0;
-        int Seed_2 = 0;
+        // Two seeds
+        int sem1 = 0;
+        int sem2 = 0;
         
-        Select_picks__(*nodo,Seed_1,Seed_2);
-        vector<int> p_s_I = (*nodo)->DC[Seed_1];
-        vector<int> p_s_II = (*nodo)->DC[Seed_2];
+        picks(*nodo,sem1,sem2);
+        vector<int> p1 = (*nodo)->DC[sem1];
+        vector<int> p2 = (*nodo)->DC[sem2];
         
-        node* regionLeft = new node(p_s_I);
-        node* regionRight = new node(p_s_II);
+        node* regionLeft = new node(p1);
+        node* regionRight = new node(p2);
         
         for(int i =0;i<(*nodo)->DC.size();i++){
-            if( i == Seed_1  || i == Seed_2) continue;
+            if( i == sem1 || i == sem2) continue;
             
-            int area_1 = regionLeft->data((*nodo)->DC[i]) - regionLeft->calculateMBR();
-            int area_2 = regionRight->data((*nodo)->DC[i]) - regionRight->calculateMBR();
+            int area1 = regionLeft->data((*nodo)->DC[i]) - regionLeft->calculateMBR();
+            int area2 = regionRight->data((*nodo)->DC[i]) - regionRight->calculateMBR();
             
-            if(area_1 < area_2){
+            if(area1 < area2){
                 regionLeft->DC.push_back((*nodo)->DC[i]);
                 regionLeft->updateMBR((*nodo)->DC[i]);
             }
-            else
-            {
+            else{
                 regionRight->DC.push_back((*nodo)->DC[i]);
                 regionRight->updateMBR((*nodo)->DC[i]);
             }
@@ -171,11 +182,11 @@ void Xtree::Split_node(node** nodo)
             regionLeft->parent = *nodo;
             regionRight->parent = *nodo;
             (*nodo)->children.push_back(regionLeft);
-            (*nodo)->children.push_back(regionRight); //UPDATE REGION
+            (*nodo)->children.push_back(regionRight);
         }
         else{
-            (*nodo)->leaf = false; //AAD
-            (*nodo)->children.clear(); //ADD
+            (*nodo)->leaf = false;
+            (*nodo)->children.clear();
             node *padre = (*nodo)->parent;
             regionLeft->parent = padre;
             regionRight->parent = padre;
@@ -204,33 +215,32 @@ void Xtree::Split_node(node** nodo)
             }
             //padre->is_leaf = false;
             if(!adjust_tree){
-                this->Split_node(&padre);
+                this->split(&padre);
             }
             else{
-                 return;
+                return;
             }
         }
     }
     else{
-        int Seed_1 = 0;
-        int Seed_2 = 0;
+        int sem1 = 0;
+        int sem2 = 0;
         
-        Select_picks__(*nodo,Seed_1,Seed_2);
-        node* regionLeft = new node((*nodo)->children[Seed_1]);
-        node* regionRight = new node((*nodo)->children[Seed_2]);
+        picks(*nodo,sem1,sem2);
+        node* regionLeft = new node((*nodo)->children[sem1]);
+        node* regionRight = new node((*nodo)->children[sem2]);
         
         for(int i=0;i<(*nodo)->children.size();i++){
-            if(i==Seed_1 || i==Seed_2) continue;
+            if(i==sem1 || i==sem2) continue;
             
-            int area_1 = regionLeft->data((*nodo)->children[i]) - regionLeft->calculateMBR();
-            int area_2 = regionRight->data((*nodo)->children[i]) - regionRight->calculateMBR();
+            int area1 = regionLeft->data((*nodo)->children[i]) - regionLeft->calculateMBR();
+            int area2 = regionRight->data((*nodo)->children[i]) - regionRight->calculateMBR();
             
-            if(area_1 < area_2){
+            if(area1 < area2){
                 regionRight->children.push_back((*nodo)->children[i]);
                 regionRight->updateMBR((*nodo)->children[i]);
             }
-            else
-            {
+            else{
                 regionLeft->children.push_back((*nodo)->children[i]);
                 regionLeft->updateMBR((*nodo)->children[i]);
             }
@@ -248,10 +258,9 @@ void Xtree::Split_node(node** nodo)
                 node* padre = (*nodo)->parent;
                 regionLeft->parent = padre;
                 regionRight->parent = padre;
-                for(int i=0;i<padre->children.size();i++)
-                {
-                    if(padre->children[i]==(*nodo))
-                    {
+                for(int i=0;i<padre->children.size();i++){
+                    
+                    if(padre->children[i]==(*nodo)){
                         delete padre->children[i];
                         padre->children.erase(padre->children.begin()+i);
                     }
@@ -261,7 +270,7 @@ void Xtree::Split_node(node** nodo)
                 
                 bool adjust_tree = true;
                 while(adjust_tree and padre){
-                    // M
+            
                     if(!(padre->children.size() <= this->M*(padre->superNode))){
                         adjust_tree = false;
                     }
@@ -270,7 +279,7 @@ void Xtree::Split_node(node** nodo)
                     }
                 }
                 if(!adjust_tree){
-                    this->Split_node(&padre);
+                    this->split(&padre);
                 }
                 else{
                     return;
@@ -296,7 +305,7 @@ void Xtree::Split_node(node** nodo)
             }
             
             if(!adjust_tree){
-                this->Split_node(&padre);
+                this->split(&padre);
             }
             else{
                 return;
@@ -306,29 +315,16 @@ void Xtree::Split_node(node** nodo)
 }
 
 
-//Pick Next
-bool Xtree::pick_next(node* region_1,node* region_2,const vector<int>& point)
-{
-    int area_1 = region_1->data(point) - region_1->calculateMBR();
-    int area_2 = region_2->data(point) - region_2->calculateMBR();
-    
-    if(area_1 < area_2){
-        return false;
-    }
-    else{
-        return true;
-    }
-}
 
 // Overlap
 bool Xtree::Overlap(node* region1,node* region2){
     for(int i=0;i<numDim;i++){
         if((region2->LB[i] < region1->UB[i]) or (region1->UB[i] > region2->LB[i])){
-            return true; //HAY OVERLAP
+            return true;
         }
     }
     
-    return false; //NO HAY OVERLAP
+    return false;
 }
 
 
@@ -336,9 +332,7 @@ bool Xtree::Overlap(node* region1,node* region2){
 vector<vector<int>> Xtree::KNN_Search(node *root,vector<int> point,int k){
     
     vector<vector<int>> consult;
-    
     priority_queue<pair<node*,int> , vector<pair<node*,int>> , cmp> queue;
-    
     queue.push(make_pair(root,0));
     
     int count=0;
@@ -350,21 +344,18 @@ vector<vector<int>> Xtree::KNN_Search(node *root,vector<int> point,int k){
             for(int i=0;i < currentNodo->DC.size() and count < k;i++){
                 for(int j=0;j<currentNodo->DC[i].size();j++){
                     cout<<currentNodo->DC[i][j];
-                      if(j%28==0){
-                          cout<<endl<<"      ";
-                      }
+                    if(j%28==0){
+                        cout<<endl<<"      ";
+                    }
                 }
                 cout<<"\n"<<endl;
                 count++;
             }
         }
         else{
-            cout<<"Fucking else";
-            //for(auto childIndex : currentNodo->m_data)
             for(int i=0;i<currentNodo->children.size();i++){
-                // Nodo *tempNodo = new Nodo(childIndex);
+              
                 node *tempNodo = currentNodo->children[i];
-                
                 queue.push(make_pair(tempNodo,tempNodo->distancePoint(point)));
             }
         }
@@ -375,4 +366,3 @@ vector<vector<int>> Xtree::KNN_Search(node *root,vector<int> point,int k){
     return consult;
 }
 #endif /* X_Tree_hpp */
-
