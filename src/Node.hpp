@@ -56,19 +56,22 @@ public:
     };
 };
 
+// Node
 node::node(){
     
     this->leaf = false;
 }
 
+// Node Vector
 node::node(vector<int> point){
     
-    this->leaf = true;           //Dado que tiene dato (valores)
+    this->leaf = true;
     this->DC.push_back(point);
     this->LB = point;
     this->UB = point;
 }
 
+// Node node
 node::node(node *n){
     
     this->leaf = false;
@@ -77,6 +80,7 @@ node::node(node *n){
     this->UB = n->UB;
 }
 
+// Calculate MBR Vectors
 int node::calculateMBR(vector<int> a,vector<int> b){
     int tmp = 1;
     for(int i = 0;i < numDim;i++){
@@ -85,10 +89,13 @@ int node::calculateMBR(vector<int> a,vector<int> b){
     return tmp;
 }
 
+// Calculate MBR
 int node::calculateMBR(){
     return calculateMBR(UB,LB);
 }
 
+
+// Data Vector
 int node::data(vector<int> &point){
     
     vector<int> _LB = this->LB;
@@ -96,22 +103,24 @@ int node::data(vector<int> &point){
     
     for(int i = 0; i <numDim;i++){
         
-        if(_LB[i] > point[i]){
+        if(_LB[i] < point[i]){
             _LB[i] = point[i];
         }
-        if(_UB[i] < point[i]) {
+        if(_UB[i] > point[i]) {
             _UB[i] = point[i];
         }
     }
     
-    return calculateMBR(_LB,_UB);
+    return calculateMBR(_UB,_LB);
 }
 
+
+// Data Node
 int node::data(node n) {
     vector<int> _LB = this->LB;
     vector<int> _UB = this->UB;
     
-    for(int i = 0 ; i < numDim;i++){
+    for(int i = 0 ; i <numDim;i++){
         
         if(_LB[i] > n.LB[i]){
             _LB[i] = n.LB[i];
@@ -127,9 +136,11 @@ int node::data(node n) {
             _UB[i] = n.UB[i];
         }
     }
-    return calculateMBR(_LB,UB);
+    return calculateMBR(_LB,_UB);
 }
 
+
+// Update MBR vector
 void node::updateMBR(const vector<int> point){
     
     for(long i = 0; i < numDim;i++){
@@ -142,6 +153,8 @@ void node::updateMBR(const vector<int> point){
     }
 }
 
+
+// Update MBR node
 void node::updateMBR(node *n){
     
     for(int i=0;i<numDim;i++){
@@ -165,6 +178,8 @@ void node::updateMBR(node *n){
 //LP = Lower Point
 //UP = Upper Point
 
+
+// Distance Point
 int node::distancePoint(vector<int>_UP,vector<int>_LP,vector<int> point){
     int distancia = 0;
     int component = 0;
@@ -184,10 +199,11 @@ int node::distancePoint(vector<int>_UP,vector<int>_LP,vector<int> point){
     return sqrt(distancia);
 }
 
+
+// Distance Point
 int node::distancePoint(vector<int> point){
     return distancePoint(this->UB,this->LB,point);
 }
 
 
 #endif /* Node_hpp */
-
