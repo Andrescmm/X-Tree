@@ -1,13 +1,15 @@
+// Copyright 2020 Roger Peralta Aranibar Advanced Data Estructures
+// Timer
 //
 //  main.cpp
 //  X-Tree Andres
 //
 //  Created by Andres  on 30/11/21.
 //
-// Timer
-// Copyright 2020 Roger Peralta Aranibar Advanced Data Estructures
+
 #include <iostream>
 #include <fstream>
+#include <random>
 #include <sstream>
 #include <sys/time.h>
 #include <iomanip>
@@ -21,9 +23,9 @@
 #define PATH1 "../dataset.txt"
 #define PATH2 "../knn.txt"
 
-const int m = 100;
-
 using namespace std;
+
+int m = 0;
 
 // Timer
 template <typename>
@@ -62,14 +64,14 @@ private:
 
 
 // X-Tree
-Xtree *xt= new Xtree(m);
+Xtree *xt;
 
 
 // Read Data Set
 int build_data_structure(){
     string line,num = "";
-    //ifstream file("/Users/andrescusirramos/Documents/CCOMP 2021-2/EDA/EDA/X-tree V01/X-tree V01/file3.txt");
-    ifstream file(PATH1);
+    ifstream file("/Users/andrescusirramos/Documents/CCOMP 2021-2/EDA/EDA/X-tree V01/X-tree V01/dataset.txt");
+    //ifstream(PATH1);
     
     if(file.is_open()){
         
@@ -107,8 +109,8 @@ int build_data_structure(){
 
 // Read KNN
 vector<int> readKNN(){
-    //ifstream file("/Users/andrescusirramos/Documents/CCOMP 2021-2/EDA/EDA/X-Tree Andres/X-Tree Andres/knn.txt");
-    ifstream file(PATH2);
+    ifstream file("/Users/andrescusirramos/Documents/CCOMP 2021-2/EDA/EDA/X-Tree Andres/X-Tree Andres/knn.txt");
+    //ifstream file(PATH2);
     vector<int> data;
     if (file.is_open()){
         string input;
@@ -121,7 +123,7 @@ vector<int> readKNN(){
         }
     }
     for(int i =0; i<data.size();i++){
-            cout<<data[i];
+        cout<<data[i];
         if(i%28==0){
             cout<<endl<<"      ";
         }
@@ -137,13 +139,19 @@ std::vector<std::vector<int>>query_knn(vector<int>Point,int k){
 
 // Main
 int main(){
+    srand((unsigned) time(NULL));
+    //m=1000;
+    m = 100 + (rand() % 3000);
+    xt= new Xtree(m);
     
+    cout<<"     --------------------------------"<<endl;
     cout<<"     --------------------------------"<<endl;
     cout<<"     --------------------------------"<<endl;
     cout<<"                   X-TREE            "<<endl;
     cout<<"              ANDRES CUSIRRAMOS      "<<endl;
     cout<<"                    2021             "<<endl;
     cout<<"                  CCOMP6-1           "<<endl;
+    cout<<"     --------------------------------"<<endl;
     cout<<"     --------------------------------"<<endl;
     cout<<"     --------------------------------"<<endl;
     cout<<endl;
