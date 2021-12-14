@@ -50,59 +50,256 @@ Xtree::Xtree(int m){
 
 
 // Distance
-int Xtree::distance(const vector<int> &a, const vector<int> &b){
+int Xtree::distance(const vector<int> &v1, const vector<int> &v2){
     int distancia = 0;
     for(int i = 0;i<numDim;i++){
         
-        distancia = distancia + abs((b[i]-a[i])*(b[i]-a[i]));
+        distancia = distancia + abs((v2[i]-v1[i])*(v2[i]-v1[i]));
     }
     return sqrt(distancia);
 }
 
 
+// Select Picks
+void Xtree::picks(node* nodeX,int &v1,int &v2){
+    v1 = 0;
+    v2 = 0;
+    int minLB = numeric_limits<int>::max();
+    int minUB = numeric_limits<int>::max();
+    int tempArea = 0;
+
+    for(int i=0 ; i<nodeX->DC.size() ; i++){
+        tempArea = distance(nodeX->LB,nodeX->DC[i]);
+        if(tempArea < minLB){
+            minLB = tempArea;
+            v1 = i;
+        }
+        
+        tempArea = distance(nodeX->UB,nodeX->DC[i]);
+        if(tempArea < minUB){
+            if(i != v1){
+                minUB = tempArea;
+                v2 = i;
+            }
+        }
+    }
+}
+
+
+
 // Choose leaf
-node* Xtree::chooseLeaf(node *node, vector<int> point){
-    if(node->leaf){
-        return node;
+node* Xtree::chooseLeaf(node *nodeX, vector<int> point){
+    if(nodeX->leaf){
+        return nodeX;
     }
     
     // the best area
     int area = numeric_limits<int>::max();
     int tempArea = 0;
     
-    for (int i = 0; i< node->children.size(); i++){
-        tempArea = node->children[i]->data(point) - node->children[i]->calculateMBR();
+    for (int i = 0; i< nodeX->children.size(); i++){
+        tempArea = nodeX->children[i]->data(point) - nodeX->children[i]->calculateMBR();
         
         if (tempArea <= area){
             area = tempArea;
-            node = node->children[i];
+            nodeX = nodeX->children[i];
         }
     }
-    node->updateMBR(point);
-    return chooseLeaf(node,point);
+    nodeX->updateMBR(point);
+    return chooseLeaf(nodeX,point);
 }
 
 
-// Select Picks
-void Xtree::picks(node* n,int &a,int &b){
-    a = 0;
-    b = 0;
-    int minLB = numeric_limits<int>::max();
-    int minUB = numeric_limits<int>::max();
-    int tempArea = 0;
 
-    for(int i=0 ; i<n->DC.size() ; i++){
-        tempArea = distance(n->LB,n->DC[i]);
-        if(tempArea < minLB){
-            minLB = tempArea;
-            a = i;
+// CheckParent
+void Xtree::checkParent(node *nodeX){
+    
+    if(nodeX == nullptr and nodeX->leaf)
+        return;
+    
+    for(int i=0;i<nodeX->children.size();i++){
+        nodeX->children[i]->parent = nodeX;
+        checkParent(nodeX->children[i]);
+    }
+}
+
+
+
+// Overlap
+bool Xtree::Overlap(node* r1,node* r2){
+    for(int i=0;i<numDim;i++){
+        if((r2->LB[i] < r1->UB[i]) or (r1->UB[i] > r2->LB[i])){
+            return true;
+        }
+    }
+    
+    return false;
+}
+
+
+// Split Node
+void Xtree::split(node** nodeX){
+    
+    if((*nodeX)->leaf){
+        // Two seeds
+        int sem1 = 0;
+        int sem2 = 0;
+        
+        picks(*nodeX,sem1,sem2);
+        vector<int> p1 = (*nodeX)->DC[sem1];
+        vector<int> p2 = (*nodeX)->DC[sem2];
+        
+        node* rL = new node(p1);
+        node* rR = new node(p2);
+        
+        for(int i =0;i<(*nodeX)->DC.size();i++){
+            if( i == sem1 || i == sem2) continue;
+            
+            int area1 = rL->data((*nodeX)->DC[i]) - rL->calculateMBR();
+            int area2 = rR->data((*nodeX)->DC[i]) - rR->calculateMBR();
+            
+            if(area1 < area2){
+                rL->DC.push_back((*nodeX)->DC[i]);
+                rL->updateMBR((*nodeX)->DC[i]);
+            }
+            else{
+                rR->DC.push_back((*nodeX)->DC[i]);
+                rR->updateMBR((*nodeX)->DC[i]);
+            }
         }
         
-        tempArea = distance(n->UB,n->DC[i]);
-        if(tempArea < minUB){
-            if(i != a){
-                minUB = tempArea;
-                b = i;
+        if((*nodeX) == head){
+            (*nodeX)->leaf = false;
+            (*nodeX)->DC.clear();
+            rL->parent = *nodeX;
+            rR->parent = *nodeX;
+            (*nodeX)->children.push_back(rL);
+            (*nodeX)->children.push_back(rR);
+        }
+        else{
+            (*nodeX)->leaf = false;
+            (*nodeX)->children.clear();
+            node *padre = (*nodeX)->parent;
+            rL->parent = padre;
+            rR->parent = padre;
+            
+            for(int i=0;i<padre->children.size();i++){
+                if(padre->children[i] == (*nodeX)){
+                    delete padre->children[i];
+                    padre->children.erase(padre->children.begin()+i);
+                    i = padre->children.size();
+                }
+            }
+            
+            padre->children.push_back(rL);
+            padre->children.push_back(rR);
+            
+            bool aTree = true;
+            while(aTree and padre){
+                
+                if(!(padre->children.size() <= this->M*(padre->superNode))){
+                    aTree = false;
+                }
+                else{
+                    padre = padre->parent;
+                }
+            }
+            if(!aTree){
+                this->split(&padre);
+            }
+            else{
+                return;
+            }
+        }
+    }
+    else{
+        int sem1 = 0;
+        int sem2 = 0;
+        
+        picks(*nodeX,sem1,sem2);
+        node* rL = new node((*nodeX)->children[sem1]);
+        node* rR = new node((*nodeX)->children[sem2]);
+        
+        for(int i=0;i<(*nodeX)->children.size();i++){
+            if(i==sem1 || i==sem2) continue;
+            
+            int area1 = rL->data((*nodeX)->children[i]) - rL->calculateMBR();
+            int area2 = rR->data((*nodeX)->children[i]) - rR->calculateMBR();
+            
+            if(area1 < area2){
+                rR->children.push_back((*nodeX)->children[i]);
+                rR->updateMBR((*nodeX)->children[i]);
+            }
+            else{
+                rL->children.push_back((*nodeX)->children[i]);
+                rL->updateMBR((*nodeX)->children[i]);
+            }
+        }
+        
+        if(!this->Overlap(rL,rR)){
+            if(*nodeX == this->head){
+                (*nodeX)->children.clear();
+                rL->parent = *nodeX;
+                rR->parent = *nodeX;
+                (*nodeX)->children.push_back(rL);
+                (*nodeX)->children.push_back(rR);
+            }
+            else{
+                node* padre = (*nodeX)->parent;
+                rL->parent = padre;
+                rR->parent = padre;
+                for(int i=0;i<padre->children.size();i++){
+                    
+                    if(padre->children[i]==(*nodeX)){
+                        delete padre->children[i];
+                        padre->children.erase(padre->children.begin()+i);
+                    }
+                }
+                padre->children.push_back(rL);
+                padre->children.push_back(rR);
+                
+                bool aTree = true;
+                while(aTree and padre){
+            
+                    if(!(padre->children.size() <= this->M*(padre->superNode))){
+                        aTree = false;
+                    }
+                    else{
+                        padre = padre->parent;
+                    }
+                }
+                if(!aTree){
+                    this->split(&padre);
+                }
+                else{
+                    return;
+                }
+            }
+        }
+        else{
+            (*nodeX)->children.push_back(rL);
+            (*nodeX)->children.push_back(rR);
+            
+            (*nodeX)->superNode++;
+            node* padre = (*nodeX)->parent;
+            
+            bool aTree = true;
+            
+            while(aTree and padre){
+                
+                if(!(padre->children.size() <= this->M*(padre->superNode))){
+                    aTree = false;
+                }
+                else{
+                    padre = padre->parent;
+                }
+            }
+            
+            if(!aTree){
+                this->split(&padre);
+            }
+            else{
+                return;
             }
         }
     }
@@ -131,202 +328,6 @@ void Xtree::insert(vector<int> point){
         return;
     }
 }
-
-// CheckParent
-void Xtree::checkParent(node *node){
-    
-    if(node == nullptr and node->leaf)
-        return;
-    
-    for(int i=0;i<node->children.size();i++){
-        node->children[i]->parent = node;
-        checkParent(node->children[i]);
-    }
-}
-
-
-// Split Node
-void Xtree::split(node** nodo){
-    
-    if((*nodo)->leaf){
-        // Two seeds
-        int sem1 = 0;
-        int sem2 = 0;
-        
-        picks(*nodo,sem1,sem2);
-        vector<int> p1 = (*nodo)->DC[sem1];
-        vector<int> p2 = (*nodo)->DC[sem2];
-        
-        node* regionLeft = new node(p1);
-        node* regionRight = new node(p2);
-        
-        for(int i =0;i<(*nodo)->DC.size();i++){
-            if( i == sem1 || i == sem2) continue;
-            
-            int area1 = regionLeft->data((*nodo)->DC[i]) - regionLeft->calculateMBR();
-            int area2 = regionRight->data((*nodo)->DC[i]) - regionRight->calculateMBR();
-            
-            if(area1 < area2){
-                regionLeft->DC.push_back((*nodo)->DC[i]);
-                regionLeft->updateMBR((*nodo)->DC[i]);
-            }
-            else{
-                regionRight->DC.push_back((*nodo)->DC[i]);
-                regionRight->updateMBR((*nodo)->DC[i]);
-            }
-        }
-        
-        if((*nodo) == head){
-            (*nodo)->leaf = false;
-            (*nodo)->DC.clear();
-            regionLeft->parent = *nodo;
-            regionRight->parent = *nodo;
-            (*nodo)->children.push_back(regionLeft);
-            (*nodo)->children.push_back(regionRight);
-        }
-        else{
-            (*nodo)->leaf = false;
-            (*nodo)->children.clear();
-            node *padre = (*nodo)->parent;
-            regionLeft->parent = padre;
-            regionRight->parent = padre;
-            
-            for(int i=0;i<padre->children.size();i++){
-                if(padre->children[i] == (*nodo)){
-                    //cout<<"Ingreso!!!!!!!!"<<endl;
-                    delete padre->children[i];
-                    padre->children.erase(padre->children.begin()+i);
-                    i = padre->children.size();
-                }
-            }
-            
-            padre->children.push_back(regionLeft);
-            padre->children.push_back(regionRight);
-            
-            bool adjust_tree = true;
-            while(adjust_tree and padre){
-                
-                if(!(padre->children.size() <= this->M*(padre->superNode))){
-                    adjust_tree = false;
-                }
-                else{
-                    padre = padre->parent;
-                }
-            }
-            //padre->is_leaf = false;
-            if(!adjust_tree){
-                this->split(&padre);
-            }
-            else{
-                return;
-            }
-        }
-    }
-    else{
-        int sem1 = 0;
-        int sem2 = 0;
-        
-        picks(*nodo,sem1,sem2);
-        node* regionLeft = new node((*nodo)->children[sem1]);
-        node* regionRight = new node((*nodo)->children[sem2]);
-        
-        for(int i=0;i<(*nodo)->children.size();i++){
-            if(i==sem1 || i==sem2) continue;
-            
-            int area1 = regionLeft->data((*nodo)->children[i]) - regionLeft->calculateMBR();
-            int area2 = regionRight->data((*nodo)->children[i]) - regionRight->calculateMBR();
-            
-            if(area1 < area2){
-                regionRight->children.push_back((*nodo)->children[i]);
-                regionRight->updateMBR((*nodo)->children[i]);
-            }
-            else{
-                regionLeft->children.push_back((*nodo)->children[i]);
-                regionLeft->updateMBR((*nodo)->children[i]);
-            }
-        }
-        
-        if(!this->Overlap(regionLeft,regionRight)){
-            if(*nodo == this->head){
-                (*nodo)->children.clear();
-                regionLeft->parent = *nodo;
-                regionRight->parent = *nodo;
-                (*nodo)->children.push_back(regionLeft);
-                (*nodo)->children.push_back(regionRight);
-            }
-            else{
-                node* padre = (*nodo)->parent;
-                regionLeft->parent = padre;
-                regionRight->parent = padre;
-                for(int i=0;i<padre->children.size();i++){
-                    
-                    if(padre->children[i]==(*nodo)){
-                        delete padre->children[i];
-                        padre->children.erase(padre->children.begin()+i);
-                    }
-                }
-                padre->children.push_back(regionLeft);
-                padre->children.push_back(regionRight);
-                
-                bool adjust_tree = true;
-                while(adjust_tree and padre){
-            
-                    if(!(padre->children.size() <= this->M*(padre->superNode))){
-                        adjust_tree = false;
-                    }
-                    else{
-                        padre = padre->parent;
-                    }
-                }
-                if(!adjust_tree){
-                    this->split(&padre);
-                }
-                else{
-                    return;
-                }
-            }
-        }
-        else{
-            (*nodo)->children.push_back(regionLeft);
-            (*nodo)->children.push_back(regionRight);
-            
-            (*nodo)->superNode++;
-            node* padre = (*nodo)->parent;
-            bool adjust_tree = true;
-            
-            while(adjust_tree and padre){
-                
-                if(!(padre->children.size() <= this->M*(padre->superNode))){
-                    adjust_tree = false;
-                }
-                else{
-                    padre = padre->parent;
-                }
-            }
-            
-            if(!adjust_tree){
-                this->split(&padre);
-            }
-            else{
-                return;
-            }
-        }
-    }
-}
-
-
-
-// Overlap
-bool Xtree::Overlap(node* region1,node* region2){
-    for(int i=0;i<numDim;i++){
-        if((region2->LB[i] < region1->UB[i]) or (region1->UB[i] > region2->LB[i])){
-            return true;
-        }
-    }
-    
-    return false;
-}
-
 
 // KNN
 vector<vector<int>> Xtree::KNN_Search(node *root,vector<int> point,int k){
