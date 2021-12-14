@@ -15,6 +15,7 @@
 #include <iomanip>
 #include <memory>
 #include <utility>
+#include <chrono>
 #include <vector>
 #include "X-Tree.hpp"
 #include "Node.hpp"
