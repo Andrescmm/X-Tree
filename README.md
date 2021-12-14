@@ -11,5 +11,5 @@ Para compilar la estructura:
 $ cmake -B build
 $ cd build
 $ make
-$ ./xtree
+$ ./xtree_andres
 ```
