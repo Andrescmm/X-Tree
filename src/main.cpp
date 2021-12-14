@@ -71,8 +71,8 @@ Xtree *bestTreeEver;
 // Read Data Set
 int build_data_structure(){
     string line,num = "";
-    ifstream file("/Users/andrescusirramos/Documents/CCOMP 2021-2/EDA/EDA/X-tree V01/X-tree V01/dataset.txt");
-    //ifstream(PATH1);
+    //ifstream file("/Users/andrescusirramos/Documents/CCOMP 2021-2/EDA/EDA/X-tree V01/X-tree V01/dataset.txt");
+    ifstream file(PATH1);
     
     if(file.is_open()){
         
@@ -110,8 +110,8 @@ int build_data_structure(){
 
 // Read KNN
 vector<int> readKNN(){
-    ifstream file("/Users/andrescusirramos/Documents/CCOMP 2021-2/EDA/EDA/X-Tree Andres/X-Tree Andres/knn.txt");
-    //ifstream file(PATH2);
+    //ifstream file("/Users/andrescusirramos/Documents/CCOMP 2021-2/EDA/EDA/X-Tree Andres/X-Tree Andres/knn.txt");
+    ifstream file(PATH2);
     vector<int> data;
     if (file.is_open()){
         string input;
