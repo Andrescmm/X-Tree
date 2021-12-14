@@ -4,6 +4,7 @@
 //
 //  Created by Andres  on 30/11/21.
 //
+
 #ifndef Node_hpp
 #define Node_hpp
 #include <iostream>
@@ -80,20 +81,6 @@ node::node(node *n){
     this->UB = n->UB;
 }
 
-// Calculate MBR Vectors
-int node::calculateMBR(vector<int> a,vector<int> b){
-    int tmp = 1;
-    for(int i = 0;i < numDim;i++){
-        tmp = tmp * abs(b[i] - a[i]);
-    }
-    return tmp;
-}
-
-// Calculate MBR
-int node::calculateMBR(){
-    return calculateMBR(UB,LB);
-}
-
 
 // Data Vector
 int node::data(vector<int> &point){
@@ -140,6 +127,21 @@ int node::data(node n) {
 }
 
 
+// Calculate MBR Vectors
+int node::calculateMBR(vector<int> a,vector<int> b){
+    int tmp = 1;
+    for(int i = 0;i < numDim;i++){
+        tmp = tmp * abs(b[i] - a[i]);
+    }
+    return tmp;
+}
+
+// Calculate MBR
+int node::calculateMBR(){
+    return calculateMBR(UB,LB);
+}
+
+
 // Update MBR vector
 void node::updateMBR(const vector<int> point){
     
@@ -181,22 +183,22 @@ void node::updateMBR(node *n){
 
 // Distance Point
 int node::distancePoint(vector<int>_UP,vector<int>_LP,vector<int> point){
-    int distancia = 0;
-    int component = 0;
+    int dis = 0;
+    int tmp = 0;
     
     for(int i = 0 ; i < numDim ; i++) {
         if((point[i] >= _LP[i]) and (point[i] <= _UP[i])){
-            component = 0;
+            tmp = 0;
         }
         else if(point[i] < _LP[i]){
-            component = _LP[i] - point[i];
+            tmp = _LP[i] - point[i];
         }
         else{
-            component = point[i] - _UP[i];
+            tmp = point[i] - _UP[i];
         }
-        distancia += component * component;
+        dis += tmp * tmp;
     }
-    return sqrt(distancia);
+    return sqrt(dis);
 }
 
 
