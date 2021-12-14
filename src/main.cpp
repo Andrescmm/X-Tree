@@ -23,6 +23,7 @@
 #define PATH1 "../dataset.txt"
 #define PATH2 "../knn.txt"
 
+
 using namespace std;
 
 int m = 0;
@@ -64,14 +65,14 @@ private:
 
 
 // X-Tree
-Xtree *xt;
+Xtree *bestTreeEver;
 
 
 // Read Data Set
 int build_data_structure(){
     string line,num = "";
-    //ifstream file("/Users/andrescusirramos/Documents/CCOMP 2021-2/EDA/EDA/X-tree V01/X-tree V01/dataset.txt");
-    ifstream file(PATH1);
+    ifstream file("/Users/andrescusirramos/Documents/CCOMP 2021-2/EDA/EDA/X-tree V01/X-tree V01/dataset.txt");
+    //ifstream(PATH1);
     
     if(file.is_open()){
         
@@ -93,7 +94,7 @@ int build_data_structure(){
             ///cout<<"dta.size() "<<data.size()<<endl;
             ///cout<<"Linea :"<<line<<endl;
             if(data.size()>0){
-                xt->insert(data);
+                bestTreeEver->insert(data);
             }
             
             data.clear();
@@ -109,8 +110,8 @@ int build_data_structure(){
 
 // Read KNN
 vector<int> readKNN(){
-    //ifstream file("/Users/andrescusirramos/Documents/CCOMP 2021-2/EDA/EDA/X-Tree Andres/X-Tree Andres/knn.txt");
-    ifstream file(PATH2);
+    ifstream file("/Users/andrescusirramos/Documents/CCOMP 2021-2/EDA/EDA/X-Tree Andres/X-Tree Andres/knn.txt");
+    //ifstream file(PATH2);
     vector<int> data;
     if (file.is_open()){
         string input;
@@ -133,16 +134,17 @@ vector<int> readKNN(){
 
 // KNN
 std::vector<std::vector<int>>query_knn(vector<int>Point,int k){
-    return xt->KNN_Search(xt->head,Point,k);
+    return bestTreeEver->KNN_Search(bestTreeEver->head,Point,k);
 }
 
 
 // Main
 int main(){
+    
     srand((unsigned) time(NULL));
     //m=1000;
     m = 100 + (rand() % 3000);
-    xt= new Xtree(m);
+    bestTreeEver= new Xtree(m);
     
     cout<<"     --------------------------------"<<endl;
     cout<<"     --------------------------------"<<endl;
@@ -155,7 +157,9 @@ int main(){
     cout<<"     --------------------------------"<<endl;
     cout<<"     --------------------------------"<<endl;
     cout<<endl;
+    
     cout<<"     Indexando....."<<endl;
+    
     Timer<int()> timed_built(build_data_structure, "Index");
     timed_built();
     
