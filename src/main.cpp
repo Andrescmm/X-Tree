@@ -169,7 +169,7 @@ int main(){
     
     vector<int> Point;
     cout<<endl;
-    cout<<"     Ingrese los KNN: ";
+    cout<<"     Ingrese los K vecinos: ";
     int knn;
     cin>>knn;
     cout<<endl;
